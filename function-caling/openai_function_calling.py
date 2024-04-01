@@ -24,7 +24,6 @@ completion = client.chat.completions.create(
     messages=[
         {
             "role": "user",
-            # "content": "When's the next flight from Amsterdam to New York?",
             "content": "What programs TeenLife offer in Boston under summer?",
         },
     ],
