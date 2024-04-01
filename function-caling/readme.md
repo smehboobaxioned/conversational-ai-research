@@ -76,6 +76,10 @@ print(output)
 **Description:**
 In this step, we initialize the OpenAI client with the provided API key. We then send a user message to the GPT-3 model using the `chat.completions.create()` method and retrieve the model's response. The response is stored in the `output` variable and printed to the console.
 
+
+**Output:**
+
+![alt text](image.png)
 ---
 
 ### Step 4: Define and Call Functions
@@ -105,6 +109,10 @@ print(program)
 **Description:**
 This step involves defining a function `get_program_info()` to retrieve program information based on the region and category provided. The function constructs a dictionary containing program details and returns it as a JSON string. We then call this function based on parameters received from the previous chat completion.
 
+
+**Output:**
+![alt text](image-1.png)
+
 ---
 
 ### Step 5: Prepare Responses
@@ -127,6 +135,10 @@ print(response)
 In this step, we prepare a human-readable response based on the program information obtained from the function call. We send a message to the GPT-3 model, including the user prompt and the function call result, and retrieve the model's response. The response is stored in the `response` variable and printed to the console.
 
 
+**Output:**
+![alt text](image-2.png)
+
+---
 
 ### Step 6: Use Multiple Functions for Enhanced Chatbot Interaction
 
@@ -228,12 +240,38 @@ chosen_function = eval(output.function_call.name)
 program = chosen_function(region, category)
 
 print(program)
+
+# Scenario 2: Submit an RFI for the program
+user_prompt_2 = f"I want to apply for the program {program_title} with the category {category}. My name is Mehboob Shaikh and my email is mehboob@axioned.com"
+output_2 = ask_and_reply(user_prompt_2)
+
+print(output_2)
+
+# Scenario 3: Submit a review for the program
+user_prompt_3 = f"Hi, this is Mehboob Shaikh and my email is mehboobs@axioned.com. I would like to share my review for the program {program_title} under the category {category}. It was a great experience exploring the TeenLife platform and I highly recommend it to other students pursuing graduation in CS."
+
+output_3 = ask_and_reply(user_prompt_3)
+
+print(output_3)
 ```
 
 **Description:**
 In this step, we define descriptions for multiple functions that our chatbot can utilize. These functions include getting program information, applying for more details about a program, and submitting a review. We then define a function `ask_and_reply()` to interact with these multiple functions. Finally, we demonstrate a scenario where the chatbot checks program details for a specific region and category and then calls the appropriate function based on the received parameters.
 
 This addition demonstrates how to handle multiple function calls within the chatbot interaction, allowing for more complex and interactive conversations.
+
+**Output:**
+- Multiple function defination
+![alt text](image-3.png)
+
+- Senario 1 output
+![alt text](image-4.png)
+
+- Senario 2 output
+![alt text](image-5.png)
+
+- Senario 3 output
+![alt text](image-6.png)
 
 ---
 
