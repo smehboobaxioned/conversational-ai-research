@@ -242,3 +242,4 @@ These snippets, along with their descriptions, provide a detailed overview of ea
 ##### References
 1. [OpenAI Blog - Function Calling and other API updates](https://openai.com/blog/function-calling-and-other-api-updates)
 2. [LangChain Documentation - Chat Models](https://python.langchain.com/docs/modules/agents/agent_types/openai_functions_agent)
+3. [OpenAI CodeBook Documentation - For more code examples](https://cookbook.openai.com/examples/how_to_call_functions_with_chat_models)
