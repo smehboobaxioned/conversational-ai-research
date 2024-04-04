@@ -1,0 +1,24 @@
+{
+  "name": "conversational-ai-research",
+  "version": "1.0.0",
+  "description": "Explore Open AI and other capabilities in terms of Conversational AI",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smehboobaxioned/conversational-ai-research.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/smehboobaxioned/conversational-ai-research/issues"
+  },
+  "homepage": "https://github.com/smehboobaxioned/conversational-ai-research#readme",
+  "dependencies": {
+    "express": "^4.19.2",
+    "node-fetch": "^2.6.6",
+    "openai": "^4.32.1"
+  }
+}
