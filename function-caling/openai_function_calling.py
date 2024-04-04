@@ -240,3 +240,76 @@ output3 = ask_and_reply(user_prompt)
 print(output3)
 
 
+
+# lets make it Conversational with multiple functional calls
+
+llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
+
+user_prompt = """
+Hi this is Mehboob Shaikh. I am High school student looking for my Gap year Program in United States.
+First, I need to know What program available in US under the Gap Year category.
+Please proceed to apply for that program for me.
+Also, I want to submit an review for that program. It was an great experience exploring TeenLife Platform my intrested program.
+my email is mehboobs@axioned.com.
+Please give me a confirmation after all of these are done.
+"""
+
+first_response = llm.predict_messages(
+    [HumanMessage(content=user_prompt)], functions=function_descriptions_multiple
+)
+
+print(first_response)
+
+second_response = llm.predict_messages(
+    [
+        HumanMessage(content=user_prompt),
+        AIMessage(content=str(first_response.additional_kwargs)),
+        AIMessage(
+            role="function",
+            additional_kwargs={
+                "name": first_response.additional_kwargs["function_call"]["name"]
+            },
+            content=f"Completed function {first_response.additional_kwargs['function_call']['name']}",
+        ),
+    ],
+    functions=function_descriptions_multiple,
+)
+
+print(second_response)
+
+third_response = llm.predict_messages(
+    [
+        HumanMessage(content=user_prompt),
+        AIMessage(content=str(first_response.additional_kwargs)),
+        AIMessage(content=str(second_response.additional_kwargs)),
+        AIMessage(
+            role="function",
+            additional_kwargs={
+                "name": second_response.additional_kwargs["function_call"]["name"]
+            },
+            content=f"Completed function {second_response.additional_kwargs['function_call']['name']}",
+        ),
+    ],
+    functions=function_descriptions_multiple,
+)
+
+print(third_response)
+
+fourth_response = llm.predict_messages(
+    [
+        HumanMessage(content=user_prompt),
+        AIMessage(content=str(first_response.additional_kwargs)),
+        AIMessage(content=str(second_response.additional_kwargs)),
+        AIMessage(content=str(third_response.additional_kwargs)),
+        AIMessage(
+            role="function",
+            additional_kwargs={
+                "name": third_response.additional_kwargs["function_call"]["name"]
+            },
+            content=f"Completed function {third_response.additional_kwargs['function_call']['name']}",
+        ),
+    ],
+    functions=function_descriptions_multiple,
+)
+
+print(fourth_response)
