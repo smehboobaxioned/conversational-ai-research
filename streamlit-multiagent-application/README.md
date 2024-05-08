@@ -16,7 +16,7 @@ Multiagent Autogen 2.0 is a Streamlit-based application for managing workflows a
 - pip
 
 ### Installation
-1. Clone the repository:
+1. Clone the repository and navigate to the `streamlit-multiagent-application` directory and follow the steps within this directory:
 
 
 2. Create a virtual environment:
