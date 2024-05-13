@@ -1,0 +1,37 @@
+# Node.js dependencies
+node_modules/
+
+# Dependency directories
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+.venv.bak/
+
+# Virtualenv
+pip-selfcheck.json
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*~
+*.log
+*.bak
+
+# Environment configuration
+.env
+
+# Compiled Python files
+*.pyc
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
