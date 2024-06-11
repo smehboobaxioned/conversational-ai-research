@@ -104,13 +104,13 @@ def is_read_query(query: str) -> bool:
 
 def show_sample_prompts():
     sample_prompts = [
-        "🔔 What are the key highlights happen in last month?",
+        "📊 What are the key highlights happen in last month?",
         "💳 What payment methods were used most?",
-        "📦 How many orders were completed in last month?",
+        "🛒 How many orders were completed in last month?",
         "💳 How many units were sold in the last order?",
     ]
 
-    st.write("Or, try one of these questions:")
+    st.write("Here are some questions you can ask:")
     cols = st.columns(len(sample_prompts))
     for idx, prompt in enumerate(sample_prompts):
         button_style = """
@@ -128,13 +128,13 @@ def show_sample_prompts():
         """
         st.markdown(button_style, unsafe_allow_html=True)
         if cols[idx].button(prompt):
-            with st.spinner("Generating response..."):
-                if "db" in st.session_state:
-                    response = get_response(prompt, st.session_state.db, st.session_state.chat_history)
-                    st.session_state.chat_history.append(HumanMessage(content=prompt))
-                    st.session_state.chat_history.append(AIMessage(content=response))
-                    st.session_state.prompt_clicked = True
-                    st.experimental_rerun()
+          with st.spinner("Generating response..."):
+            if "db" in st.session_state:
+              response = get_response(prompt, st.session_state.db, st.session_state.chat_history)
+              st.session_state.chat_history.append(HumanMessage(content=prompt))
+              st.session_state.chat_history.append(AIMessage(content=response))
+              st.session_state.prompt_clicked = True
+              st.experimental_rerun()
 
 def connect_to_supabase():
     msg = st.toast('Gathering Credentials...', icon="🔑")
@@ -146,10 +146,11 @@ def connect_to_supabase():
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
-        AIMessage(content="Hello! I'm your friendly SQL assistant. You can ask me questions about your database, and I'll help you find the answers. 😊"),
+        AIMessage(content="Hello and welcome to DB InfoChat! I'm here to help you get insights from your database. Ask me anything, and I'll find the answers for you."),
     ]
 
-st.set_page_config(page_title="Chat with your Database", page_icon=":speech_balloon:")
+st.set_page_config(page_title="DB InfoChat", page_icon=":speech_balloon:")
+st.session_state.sample_prompt_loaded = False
 
 # Custom CSS to hide the sidebar by default and increase container size
 st.markdown(
@@ -168,12 +169,20 @@ st.markdown(
         padding-left: 1rem;
         padding-bottom: 1rem;
     }
+    
+    [data-testid="stBottomBlockContainer"] {
+       max-width: 1200px;
+        padding-top: 1rem;
+        padding-right: 1rem;
+        padding-left: 1rem;
+        padding-bottom: 1rem;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.title("✨ Chat with Database")
+st.title("✨ DB InfoChat")
 
 if "db" not in st.session_state:
     connect_to_supabase()
@@ -191,49 +200,62 @@ with st.sidebar:
         database = st.text_input("Database", value="chatwithdb", key="Database")
 
     if st.button("Connect"):
-        with st.spinner("Connecting to database..."):
-            if db_type == "mysql":
-                db = init_database(
-                    db_type,
-                    user=user,
-                    password=password,
-                    host=host,
-                    port=port,
-                    database=database
-                )
-            else:
-                db = init_database(db_type)
-            st.session_state.db = db
-            st.success("Connected to database!")
+      with st.spinner("Connecting to database..."):
+        if db_type == "mysql":
+          db = init_database(
+              db_type,
+              user=user,
+              password=password,
+              host=host,
+              port=port,
+              database=database
+          )
+        else:
+          db = init_database(db_type)
+        st.session_state.db = db
+        st.success("Connected to database!")
 
 # Display initial message and sample prompts if no prompt has been clicked
-if "prompt_clicked" not in st.session_state:
-    for message in st.session_state.chat_history:
-        if isinstance(message, AIMessage):
-            with st.chat_message("AI"):
-                st.markdown(message.content)
-                show_sample_prompts()
-        elif isinstance(message, HumanMessage):
-            with st.chat_message("Human"):
-                st.markdown(message.content)
+if "prompt_clicked" not in st.session_state  or not st.session_state.prompt_clicked:
+  for message in st.session_state.chat_history:
+    if isinstance(message, AIMessage):
+      with st.chat_message("AI"):
+        st.markdown(message.content)
+    elif isinstance(message, HumanMessage):
+      with st.chat_message("Human"):
+        st.markdown(message.content)
 else:
-    for message in st.session_state.chat_history:
-        if isinstance(message, AIMessage):
-            with st.chat_message("AI"):
-                st.markdown(message.content)
-        elif isinstance(message, HumanMessage):
-            with st.chat_message("Human"):
-                st.markdown(message.content)
+  for message in st.session_state.chat_history:
+    if isinstance(message, AIMessage):
+      with st.chat_message("AI"):
+        st.markdown(message.content)
+    elif isinstance(message, HumanMessage):
+      with st.chat_message("Human"):
+        st.markdown(message.content)
 
-user_query = st.chat_input("Type a message...")
+user_query = st.chat_input("Type your question...")
 if user_query is not None and user_query.strip() != "":
-    st.session_state.chat_history.append(HumanMessage(content=user_query))
+  # Clear chat history - sample prompts
+  st.session_state.chat_history = [
+    AIMessage(content="Hello and welcome to DB InfoChat! I'm here to help you get insights from your database. Ask me anything, and I'll find the answers for you."),
+  ]
+  st.session_state.prompt_clicked = True
+  st.session_state.chat_history.append(HumanMessage(content=user_query))
+  
+  with st.chat_message("Human"):
+    st.markdown(user_query)
 
-    with st.chat_message("Human"):
-        st.markdown(user_query)
+  # with st.chat_message("AI:"):
+  #   with st.spinner("Generating response..."):
+  #     response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
+  #   st.markdown(response)
+  
+  with st.spinner("Generating response..."), st.chat_message("AI"):
+    response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
+    st.markdown(response)
 
-    with st.chat_message("AI"), st.spinner("Generating response..."):
-        response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
-        st.markdown(response)
-
-    st.session_state.chat_history.append(AIMessage(content=response))
+  st.session_state.chat_history.append(AIMessage(content=response))
+  
+# Show sample prompts only if no user input is received
+if not st.session_state.get('prompt_clicked', False):
+    show_sample_prompts()
