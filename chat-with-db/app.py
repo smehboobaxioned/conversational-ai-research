@@ -7,162 +7,150 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_community.utilities import SQLDatabase
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
-# from langchain_groq import ChatGroq
 import streamlit as st
 from sqlalchemy import create_engine
 
 load_dotenv()
 
 def init_database(db_type: str, user: str = None, password: str = None, host: str = None, port: str = None, database: str = None) -> SQLDatabase:
-  if db_type == "mysql":
-      db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
-  elif db_type == "supabase":
-    db_uri = os.getenv("SUPABASE_DB_URI")  # SUPABASE_DB_URI should be set in your .env file
-  else:
-    raise ValueError("Unsupported database type. Choose 'mysql' or 'supabase'.")
-    
-  engine = create_engine(db_uri)
-  return SQLDatabase(engine)
-  # db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
-  # return SQLDatabase.from_uri(db_uri)
+    if db_type == "mysql":
+        db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
+    elif db_type == "supabase":
+        db_uri = os.getenv("SUPABASE_DB_URI")  # SUPABASE_DB_URI should be set in your .env file
+    else:
+        raise ValueError("Unsupported database type. Choose 'mysql' or 'supabase'.")
+
+    engine = create_engine(db_uri)
+    return SQLDatabase(engine)
 
 def get_sql_chain(db):
-  template = """
-    You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
-    Based on the table schema below, write a SQL query that would answer the user's question. Take the conversation history into account.
-    
-    <SCHEMA>{schema}</SCHEMA>
-    
-    Conversation History: {chat_history}
-    
-    Write only the SQL query and nothing else. Do not wrap the SQL query in any other text, not even backticks.
-    
-    For example:
-    Question: which 3 artists have the most tracks?
-    SQL Query: SELECT "ArtistId", COUNT(*) as "track_count" FROM "Track" GROUP BY "ArtistId" ORDER BY "track_count" DESC LIMIT 3;
-    Question: Name 10 artists
-    SQL Query: SELECT "Name" FROM "Artist" LIMIT 10;
-    
-    Your turn:
-    
-    Question: {question}
-    SQL Query:
+    template = """
+        You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
+        Based on the table schema below, write a SQL query that would answer the user's question. Take the conversation history into account.
+
+        <SCHEMA>{schema}</SCHEMA>
+
+        Conversation History: {chat_history}
+
+        Write only the SQL query and nothing else. Do not wrap the SQL query in any other text, not even backticks.
+
+        For example:
+        Question: which 3 artists have the most tracks?
+        SQL Query: SELECT "ArtistId", COUNT(*) as "track_count" FROM "Track" GROUP BY "ArtistId" ORDER BY "track_count" DESC LIMIT 3;
+        Question: Name 10 artists
+        SQL Query: SELECT "Name" FROM "Artist" LIMIT 10;
+
+        Your turn:
+
+        Question: {question}
+        SQL Query:
     """
-    
-  prompt = ChatPromptTemplate.from_template(template)
-  
-  # llm = ChatOpenAI(model="gpt-4-0125-preview")
-  llm = ChatOpenAI(model="gpt-4o")
-  
-  def get_schema(_):
-    return db.get_table_info()
-  
-  return (
-    RunnablePassthrough.assign(schema=get_schema)
-    | prompt
-    | llm
-    | StrOutputParser()
-  )
-    
-def get_response(user_query: str, db: SQLDatabase, chat_history: list):
-  sql_chain = get_sql_chain(db)
-  
-  template = """
-    You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
-    Based on the table schema below, question, sql query, and sql response, write a natural language response.
-    <SCHEMA>{schema}</SCHEMA>
 
-    Conversation History: {chat_history}
-    SQL Query: <SQL>{query}</SQL>
-    User question: {question}
-    SQL Response: {response}"""
-  
-  prompt = ChatPromptTemplate.from_template(template)
-  
-  # llm = ChatOpenAI(model="gpt-4-0125-preview")
-  llm = ChatOpenAI(model="gpt-4o")
+    prompt = ChatPromptTemplate.from_template(template)
 
-  
-  chain = (
-    RunnablePassthrough.assign(query=sql_chain).assign(
-      schema=lambda _: db.get_table_info(),
-      response=lambda vars: db.run(vars["query"]) if is_read_query(vars["query"]) else "Invalid query: Only read queries are allowed."
+    llm = ChatOpenAI(model="gpt-4o")
+
+    def get_schema(_):
+        return db.get_table_info()
+
+    return (
+        RunnablePassthrough.assign(schema=get_schema)
+        | prompt
+        | llm
+        | StrOutputParser()
     )
-    | prompt
-    | llm
-    | StrOutputParser()
-  )
-  
-  response = chain.invoke({
-    "question": user_query,
-    "chat_history": chat_history,
-  })
-    
-  # Check if the response is an invalid query message
-  if response == "Invalid query: Only read queries are allowed.":
-      return response
-    
-  return response
 
+def get_response(user_query: str, db: SQLDatabase, chat_history: list):
+    sql_chain = get_sql_chain(db)
 
+    template = """
+        You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
+        Based on the table schema below, question, sql query, and sql response, write a natural language response.
+        <SCHEMA>{schema}</SCHEMA>
+
+        Conversation History: {chat_history}
+        SQL Query: <SQL>{query}</SQL>
+        User question: {question}
+        SQL Response: {response}"""
+
+    prompt = ChatPromptTemplate.from_template(template)
+
+    llm = ChatOpenAI(model="gpt-4o")
+
+    chain = (
+        RunnablePassthrough.assign(query=sql_chain).assign(
+            schema=lambda _: db.get_table_info(),
+            response=lambda vars: db.run(vars["query"]) if is_read_query(vars["query"]) else "Invalid query: Only read queries are allowed."
+        )
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+
+    response = chain.invoke({
+        "question": user_query,
+        "chat_history": chat_history,
+    })
+
+    if response == "Invalid query: Only read queries are allowed.":
+        return response
+
+    return response
 
 def is_read_query(query: str) -> bool:
-    # A simple check to ensure the query starts with SELECT or other read-only keywords.
     read_only_keywords = ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN"]
     query = query.strip().upper()
     return any(query.startswith(keyword) for keyword in read_only_keywords)
 
-  
 def show_sample_prompts():
-  sample_prompts = [
-    "🔔 What are the key highlights happen in last month?",
-    "📦 How many orders were completed in last month?",
-    "💳 What payment methods were used most?",
-    "💳 How many units were sold in the last order?",
-  ]
-  
-  st.write("Or, try one of these questions:")
-  cols = st.columns(len(sample_prompts))
-  for idx, prompt in enumerate(sample_prompts):
-      button_style = """
-      <style>
-      div.stButton > button {
-          height: 100px;
-          width: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-      }
-      </style>
-      """
-      st.markdown(button_style, unsafe_allow_html=True)
-      if cols[idx].button(prompt):
-          if "db" in st.session_state:
-            print("Please")
-            response = get_response(prompt, st.session_state.db, st.session_state.chat_history)
-            st.session_state.chat_history.append(HumanMessage(content=prompt))
-            st.session_state.chat_history.append(AIMessage(content=response))
-            st.session_state.prompt_clicked = True
-            st.experimental_rerun()
-  
+    sample_prompts = [
+        "🔔 What are the key highlights happen in last month?",
+        "💳 What payment methods were used most?",
+        "📦 How many orders were completed in last month?",
+        "💳 How many units were sold in the last order?",
+    ]
+
+    st.write("Or, try one of these questions:")
+    cols = st.columns(len(sample_prompts))
+    for idx, prompt in enumerate(sample_prompts):
+        button_style = """
+        <style>
+        div.stButton > button {
+            height: auto;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            text-align: left;
+        }
+        </style>
+        """
+        st.markdown(button_style, unsafe_allow_html=True)
+        if cols[idx].button(prompt):
+            with st.spinner("Generating response..."):
+                if "db" in st.session_state:
+                    response = get_response(prompt, st.session_state.db, st.session_state.chat_history)
+                    st.session_state.chat_history.append(HumanMessage(content=prompt))
+                    st.session_state.chat_history.append(AIMessage(content=response))
+                    st.session_state.prompt_clicked = True
+                    st.experimental_rerun()
 
 def connect_to_supabase():
-  msg = st.toast('Gathering Credentials...', icon = "🔑")
-  time.sleep(1)
-  msg.toast('Connecting remode Database...', icon = "🔐")
-  db = init_database(db_type="supabase")
-  st.session_state.db = db
-  msg.toast('Connection established!', icon = "✨")    
-  # st.balloons()
-  
+    msg = st.toast('Gathering Credentials...', icon="🔑")
+    time.sleep(1)
+    msg.toast('Establishing Connection with Database...', icon="🔐")
+    db = init_database(db_type="supabase")
+    st.session_state.db = db
+    msg.toast('Connection Established!!!', icon="✨")
+
 if "chat_history" not in st.session_state:
-  st.session_state.chat_history = [
-    AIMessage(content="Hello! I'm your friendly SQL assistant. You can ask me questions about your database, and I'll help you find the answers. 😊"),
-  ]
+    st.session_state.chat_history = [
+        AIMessage(content="Hello! I'm your friendly SQL assistant. You can ask me questions about your database, and I'll help you find the answers. 😊"),
+    ]
 
 st.set_page_config(page_title="Chat with your Database", page_icon=":speech_balloon:")
 
-# Custom CSS to hide the sidebar by default and increase container size
 st.markdown(
     """
     <style>
@@ -170,7 +158,7 @@ st.markdown(
     [data-testid="stSidebar"] {
       display: none;
     }
-    
+
     /* Increase the container width */
     .main .block-container {
         max-width: 1200px;
@@ -184,15 +172,15 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("Chat with your Database")
+st.title("✨ Chat with Database")
 
 if "db" not in st.session_state:
-  connect_to_supabase()
+    connect_to_supabase()
 
 with st.sidebar:
     st.subheader("DB Settings")
     st.write("This is a simple chat application using MySQL. Connect to the database and start chatting.")
-    
+
     db_type = st.selectbox("Database Type", ["mysql", "supabase"])
     if db_type == "mysql":
         host = st.text_input("Host", value="localhost", key="Host")
@@ -200,56 +188,50 @@ with st.sidebar:
         user = st.text_input("User", value="root", key="User")
         password = st.text_input("Password", type="password", value="rootroot", key="Password")
         database = st.text_input("Database", value="chatwithdb", key="Database")
-    
+
     if st.button("Connect"):
-      with st.spinner("Connecting to database..."):
-        if db_type == "mysql":
-            db = init_database(
-                db_type,
-                user=user,
-                password=password,
-                host=host,
-                port=port,
-                database=database
-            )
-        else:
-            db = init_database(db_type)
-        st.session_state.db = db
-        st.success("Connected to database!")
-    
+        with st.spinner("Connecting to database..."):
+            if db_type == "mysql":
+                db = init_database(
+                    db_type,
+                    user=user,
+                    password=password,
+                    host=host,
+                    port=port,
+                    database=database
+                )
+            else:
+                db = init_database(db_type)
+            st.session_state.db = db
+            st.success("Connected to database!")
 
-# if "prompt_clicked" not in st.session_state:
-#   show_sample_prompts()
-
-# Display initial message and sample prompts if no prompt has been clicked
 if "prompt_clicked" not in st.session_state:
-  for message in st.session_state.chat_history:
-    if isinstance(message, AIMessage):
-      with st.chat_message("AI"):
-        st.markdown(message.content)
-        # Display sample prompts below the initial message
-        show_sample_prompts()
-    elif isinstance(message, HumanMessage):
-      with st.chat_message("Human"):
-        st.markdown(message.content)
+    for message in st.session_state.chat_history:
+        if isinstance(message, AIMessage):
+            with st.chat_message("AI"):
+                st.markdown(message.content)
+                show_sample_prompts()
+        elif isinstance(message, HumanMessage):
+            with st.chat_message("Human"):
+                st.markdown(message.content)
 else:
-  for message in st.session_state.chat_history:
-    if isinstance(message, AIMessage):
-      with st.chat_message("AI"):
-          st.markdown(message.content)
-    elif isinstance(message, HumanMessage):
-      with st.chat_message("Human"):
-          st.markdown(message.content)
+    for message in st.session_state.chat_history:
+        if isinstance(message, AIMessage):
+            with st.chat_message("AI"):
+                st.markdown(message.content)
+        elif isinstance(message, HumanMessage):
+            with st.chat_message("Human"):
+                st.markdown(message.content)
 
 user_query = st.chat_input("Type a message...")
 if user_query is not None and user_query.strip() != "":
     st.session_state.chat_history.append(HumanMessage(content=user_query))
-    
+
     with st.chat_message("Human"):
         st.markdown(user_query)
-        
-    with st.chat_message("AI"):
+
+    with st.chat_message("AI"), st.spinner("Generating response..."):
         response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
         st.markdown(response)
-        
+
     st.session_state.chat_history.append(AIMessage(content=response))
