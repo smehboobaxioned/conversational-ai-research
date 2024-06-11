@@ -151,6 +151,7 @@ if "chat_history" not in st.session_state:
 
 st.set_page_config(page_title="Chat with your Database", page_icon=":speech_balloon:")
 
+# Custom CSS to hide the sidebar by default and increase container size
 st.markdown(
     """
     <style>
@@ -205,6 +206,7 @@ with st.sidebar:
             st.session_state.db = db
             st.success("Connected to database!")
 
+# Display initial message and sample prompts if no prompt has been clicked
 if "prompt_clicked" not in st.session_state:
     for message in st.session_state.chat_history:
         if isinstance(message, AIMessage):
