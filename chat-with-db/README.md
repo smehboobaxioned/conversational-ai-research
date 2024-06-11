@@ -13,8 +13,8 @@ This project is a Streamlit application that allows users to interact with their
 
 1. **Clone the repository:**
     ```bash
-    git clone https://github.com/yourusername/chat-with-database.git
-    cd chat-with-database
+    git clone https://github.com/smehboobaxioned/conversational-ai-research.git
+    cd chat-with-db
     ```
 
 2. **Create and activate a virtual environment:**
